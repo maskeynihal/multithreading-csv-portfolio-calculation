@@ -1,0 +1,18 @@
+{
+  "name": "portfolio-tracker",
+  "version": "1.0.0",
+  "description": "Portfolio tracker",
+  "main": "index.ts",
+  "repository": "https://github.com/maskeynihal/propine-test",
+  "author": "maskeynihal",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start:dev": "tsc --watch & nodemon -q -w dist dist/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19",
+    "typescript": "^4.7.4"
+  }
+}
