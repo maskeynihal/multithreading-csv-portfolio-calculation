@@ -18,3 +18,19 @@ export const getData = (onData: any) => {
       });
   });
 };
+
+export const getNewAmountAccordingToTransactionType = ({
+  amount,
+  latestAmount,
+  transactionType,
+}: {
+  amount: number;
+  latestAmount: number;
+  transactionType: "DEPOSIT" | "WITHDRAWAL";
+}) => {
+  if (transactionType === "DEPOSIT") {
+    return amount + latestAmount;
+  }
+
+  return latestAmount - amount;
+};

@@ -1,17 +1,32 @@
 import { convertValues, getCryptoPrice } from "./../services/crypto.services";
 import { log } from "../lib/log";
-import { getData } from "../services/data.services";
+import {
+  getData,
+  getNewAmountAccordingToTransactionType,
+} from "../services/portfolio.services";
 
 export const calculate = async (options: any) => {
   const { token, date } = options;
 
   const p = new Map();
 
-  const getDataPromise = getData((data: any) => {
-    const latestAmount = p.get(data.token) || 0;
+  const getDataPromise = getData(
+    (data: {
+      amount: number;
+      token: string;
+      transaction_type: "DEPOSIT" | "WITHDRAWAL";
+    }) => {
+      const latestAmount = p.get(data.token) || 0;
 
-    p.set(data.token, Number(latestAmount) + Number(data.amount));
-  });
+      const newAmount = getNewAmountAccordingToTransactionType({
+        amount: Number(data.amount),
+        latestAmount: Number(latestAmount),
+        transactionType: data.transaction_type,
+      });
+
+      p.set(data.token, newAmount);
+    }
+  );
 
   const cryptoPricePromise = token ? getCryptoPrice([token]) : null;
 

@@ -46,9 +46,6 @@ export const getMultipleSymbolPrice = (
     .then(({ data }) => data);
 };
 
-//{BTC: 0.2}
-// {BTC: {USD: 120}}
-
 export const convertValues = (
   balance: Record<string, number>,
   conversion: Record<string, Record<string, number>>
