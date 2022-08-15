@@ -4,7 +4,7 @@ import endpoints from "../constants/endpoints";
 
 export const getCryptoPrice = (
   from: Array<string> = [],
-  to: Array<string> = ["USD"]
+  to: Array<string> = ["USD", "NPR"]
 ) => {
   return from.length > 1
     ? getMultipleSymbolPrice(from, to)

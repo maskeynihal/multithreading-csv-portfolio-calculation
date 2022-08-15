@@ -4,6 +4,7 @@ import {
   getData,
   getNewAmountAccordingToTransactionType,
 } from "../services/portfolio.services";
+import Table from "cli-table3";
 
 export const calculate = async (options: any) => {
   const { token, date } = options;
@@ -45,12 +46,40 @@ export const calculate = async (options: any) => {
     convertedValue = convertValues({ [token]: p.get(token) }, cryptoPrice);
   }
 
-  log("+++++++++++++");
+  const headers = new Set(["S.N", "Token", "Amount"]);
+  const body = [];
+
+  const values: Array<{ sn: number; token: string; amount: number }> = [];
+  let index = 1;
+
   Object.entries(convertedValue).forEach(([token, amount]) => {
+    let a = {
+      sn: index,
+      token,
+      amount: p.get(token),
+    };
+
     Object.entries(amount).forEach(([currency, value]) => {
-      log(`${token} ${currency} ${value}`);
+      a = { ...a, [currency]: value };
+
+      headers.add(currency);
     });
+
+    index++;
+
+    values.push(a);
   });
 
-  console.log(convertedValue);
+  const table = new Table({
+    head: [...headers].map((header) => header.toUpperCase()),
+    style: {
+      head: ["cyan"],
+    },
+  });
+
+  values.forEach((v) => {
+    table.push([...Object.values(v)]);
+  });
+
+  log(table.toString());
 };
