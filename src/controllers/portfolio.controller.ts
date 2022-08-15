@@ -5,9 +5,14 @@ import {
   getNewAmountAccordingToTransactionType,
 } from "../services/portfolio.services";
 import Table from "cli-table3";
+import { formatDate, isSameDay, isValidDate } from "../lib/date";
 
 export const calculate = async (options: any) => {
   const { token, date } = options;
+
+  if (date && !isValidDate(date)) {
+    throw new Error("Invalid date");
+  }
 
   const p = new Map();
 
@@ -16,12 +21,64 @@ export const calculate = async (options: any) => {
       amount: number;
       token: string;
       transaction_type: "DEPOSIT" | "WITHDRAWAL";
+      timestamp: number;
     }) => {
       const latestAmount = p.get(data.token) || 0;
 
+      p.set(data.token, latestAmount);
+
+      if (token && date) {
+        if (
+          data.token !== token ||
+          !isSameDay(new Date(data.timestamp), new Date(date))
+        ) {
+          return;
+        }
+
+        const newAmount = getNewAmountAccordingToTransactionType({
+          amount: Number(data.amount || 0),
+          latestAmount: Number(latestAmount || 0),
+          transactionType: data.transaction_type,
+        });
+
+        p.set(data.token, newAmount);
+
+        return;
+      }
+
+      if (token) {
+        if (token !== data.token) {
+          return;
+        }
+
+        const newAmount = getNewAmountAccordingToTransactionType({
+          amount: Number(data.amount || 0),
+          latestAmount: Number(latestAmount || 0),
+          transactionType: data.transaction_type,
+        });
+
+        p.set(data.token, newAmount);
+        return;
+      }
+
+      if (date) {
+        if (!isSameDay(new Date(data.timestamp), new Date(date))) {
+          return;
+        }
+
+        const newAmount = getNewAmountAccordingToTransactionType({
+          amount: Number(data.amount || 0),
+          latestAmount: Number(latestAmount || 0),
+          transactionType: data.transaction_type,
+        });
+
+        p.set(data.token, newAmount);
+        return;
+      }
+
       const newAmount = getNewAmountAccordingToTransactionType({
-        amount: Number(data.amount),
-        latestAmount: Number(latestAmount),
+        amount: Number(data.amount || 0),
+        latestAmount: Number(latestAmount || 0),
         transactionType: data.transaction_type,
       });
 
