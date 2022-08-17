@@ -1,8 +1,8 @@
-import axios, { AxiosRequestConfig } from "axios";
 import process from "process";
 import app from "../config/app";
-
 import Cache from "../utils/cache";
+import axios, { AxiosRequestConfig } from "axios";
+import CryptoApiError from "../errors/CryptoApiError";
 
 const cache = new Cache({ filePath: process.cwd() + "/.cache" });
 
@@ -21,16 +21,15 @@ export const get = async (url: string, params: AxiosRequestConfig) => {
     return Promise.resolve(cached);
   }
 
-  return api
-    .get(url, params)
-    .then((res) => {
-      cache.set(uniqueKey, res.data);
+  const { data } = await api.get(url, params);
 
-      return res.data;
-    })
-    .catch((err) => {
-      return Promise.reject(err);
-    });
+  if (data?.Response === "Error") {
+    throw new CryptoApiError(data?.Message);
+  }
+
+  cache.set(uniqueKey, data);
+
+  return data;
 };
 
 export default api;
