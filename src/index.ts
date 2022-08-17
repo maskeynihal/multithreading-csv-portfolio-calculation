@@ -1,16 +1,13 @@
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname + "/../../.env") });
+dotenv.config({ path: path.resolve(__dirname + "/../.env") });
 
-import { importCsv } from "./controllers/import.controllers";
+import cli from "./lib/cli";
 import {
   calculate,
   calculateWithMultiThread,
 } from "./controllers/portfolio.controller";
-import cli from "./lib/cli";
-
-cli.command("setup").description("Setup the portfolio.").action(importCsv);
 
 cli
   .command("pf")

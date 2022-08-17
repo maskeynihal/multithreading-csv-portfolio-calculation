@@ -5,7 +5,10 @@ import { Worker } from "worker_threads";
 import { fileSplitter } from "./file.services";
 import { IConvertedBalance, IConversion } from "./crypto.services";
 import { createReadStream, statSync } from "fs";
-import { IPortfolioOptions } from "./../validations/portfolio.validation";
+import {
+  IPortfolioOptions,
+  TransactionType,
+} from "./../validations/portfolio.validation";
 
 export type IFinalBalance = Map<string, number>;
 
@@ -30,7 +33,7 @@ export const getNewAmountAccordingToTransactionType = ({
 }: {
   amount: number;
   latestAmount: number;
-  transactionType: "DEPOSIT" | "WITHDRAWAL";
+  transactionType: TransactionType;
 }) => {
   if (transactionType === "DEPOSIT") {
     return amount + latestAmount;
@@ -71,9 +74,7 @@ export const getDataWithThreads = async (
     const completedWorkerId: Array<number> = [];
     const processFile =
       process.cwd() +
-      ["", app.outDir, "src/services", "multiThreadProcess.services.js"].join(
-        "/"
-      );
+      ["", app.outDir, "services", "multiThreadProcess.services.js"].join("/");
 
     const division = Math.ceil(totalFiles / thread);
 

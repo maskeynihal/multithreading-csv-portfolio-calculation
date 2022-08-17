@@ -7,9 +7,15 @@ export const handleError = (error: unknown) => {
     JSON.parse(error.message).forEach(({ message }: ZodError) =>
       logError(message)
     );
+
+    return;
   }
 
   if (error instanceof CryptoApiError) {
     logError(`Error in currency conversion (${error.message})`);
+
+    return;
   }
+
+  logError(error as string);
 };
