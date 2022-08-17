@@ -1,31 +1,40 @@
+import { IConvertedValue } from "../controllers/portfolio.controller";
 import { table } from "../lib/log";
+import { IFinalBalance } from "./portfolio.services";
+
+// TODO: Add dynamic key definition for dynamic currency conversion
+export interface ITableRow {
+  sn: number;
+  token: string;
+  amount: number;
+}
 
 export const printPortfolio = (
-  result = new Map(),
-  convertedValue: Record<string, Record<string, number>> = {}
+  result: IFinalBalance = new Map(),
+  convertedValue: IConvertedValue = {}
 ) => {
   const headers = new Set(["S.N", "Token", "Amount"]);
 
-  const values: Array<{ sn: number; token: string; amount: number }> = [];
+  const values: Array<ITableRow> = [];
 
-  let index = 1;
+  let loop = 1;
 
   Object.entries(convertedValue).forEach(([token, amount]) => {
-    let a = {
-      sn: index,
-      token,
-      amount: result.get(token),
-    };
+    let currentAmount = {};
+    loop++;
 
     Object.entries(amount).forEach(([currency, value]) => {
-      a = { ...a, [currency]: value };
+      currentAmount = { ...currentAmount, [currency]: value };
 
       headers.add(currency);
     });
 
-    index++;
-
-    values.push(a);
+    values.push({
+      sn: loop,
+      token,
+      amount: result.get(token) || 0,
+      ...currentAmount,
+    });
   });
 
   table({

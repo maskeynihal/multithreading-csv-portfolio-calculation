@@ -1,105 +1,100 @@
-import { convertValues, getCryptoPrice } from "./../services/crypto.services";
-import { log } from "../lib/log";
-import {
-  getData,
-  getDataWithThreads,
-  getNewAmountAccordingToTransactionType,
-} from "../services/portfolio.services";
-import Table from "cli-table3";
-import { formatDate, isSameDay, isValidDate } from "../lib/date";
-import db from "../lib/db";
-import { calculatePortfolio } from "../services/calculate.services";
-import { printPortfolio } from "../services/print.services";
-
+import en from "../lang/en";
 import loader from "../lib/loader";
+import { handleError } from "../utils/error";
+import { printPortfolio } from "../services/print.services";
+import { calculatePortfolio } from "../services/calculate.services";
+import { getData, getDataWithThreads } from "../services/portfolio.services";
+import { convertValues, getCryptoPrice } from "./../services/crypto.services";
+import {
+  IPortfolioOptions,
+  PortfolioOptions,
+} from "./../validations/portfolio.validation";
 
-export const calculate = async (options: any) => {
-  const { token, date } = options;
+export type IConvertedValue = Record<string, Record<string, number>>;
 
-  if (date && !isValidDate(date)) {
-    throw new Error("Invalid date");
-  }
-
-  const spinner = loader("Calculating portfolio");
-
-  spinner.start();
-
-  const getDataPromise = getData((data: any, result: any) =>
-    calculatePortfolio(data, result, { token, date })
-  );
-  const cryptoPricePromise = token ? getCryptoPrice([token]) : null;
-
+export const calculate = async (options: IPortfolioOptions) => {
   try {
+    PortfolioOptions.parse(options);
+
+    const { token, date } = options;
+
+    const spinner = loader("Calculating portfolio");
+
+    spinner.start();
+
+    const getDataPromise = getData((data: any, result: any) =>
+      calculatePortfolio(data, result, { token, date })
+    );
+    const cryptoPricePromise = token ? getCryptoPrice([token]) : null;
+
     let [result, cryptoPrice] = await Promise.all([
       getDataPromise,
       cryptoPricePromise,
     ]);
 
-    let convertedValue: Record<string, Record<string, number>> = {};
+    let convertedValue: IConvertedValue = {};
 
     if (!token) {
       cryptoPrice = await getCryptoPrice(Array.from(result.keys()));
-
-      convertedValue = convertValues(Object.fromEntries(result), cryptoPrice);
-    } else {
-      convertedValue = convertValues(
-        { [token]: result.get(token) },
-        cryptoPrice
-      );
     }
 
+    convertedValue = convertValues(
+      token ? { [token]: result.get(token) } : Object.fromEntries(result),
+      cryptoPrice
+    );
+
     spinner.stop();
+
     printPortfolio(result, convertedValue);
   } catch (error) {
     console.log(error);
   }
 };
 
-export const calculateWithMultiThread = async (options: any) => {
-  const { token, date } = options;
-
-  if (date && !isValidDate(date)) {
-    throw new Error("Invalid date");
-  }
-
-  const mainSpinner = loader("Calculating portfolio");
+export const calculateWithMultiThread = async (options: IPortfolioOptions) => {
+  const mainSpinner = loader(en.calculate.portfolio);
   mainSpinner.start();
 
-  const getDataPromise = getDataWithThreads(options).then((data) => {
-    mainSpinner.text = "Converting to USD";
-    return data;
-  });
-
-  const cryptoPricePromise = token
-    ? getCryptoPrice([token]).then((data) => {
-        mainSpinner.text = "Converted to USD";
-        return data;
-      })
-    : null;
-
   try {
-    let [result, cryptoPrice] = await Promise.all([
+    PortfolioOptions.parse(options);
+
+    const { token } = options;
+
+    const getDataPromise = getDataWithThreads(options).then((data) => {
+      mainSpinner.text = en.converting.balance;
+
+      return data;
+    });
+
+    const cryptoPricePromise = token
+      ? getCryptoPrice([token]).then((data) => {
+          mainSpinner.text = en.finalize.portfolio;
+
+          return data;
+        })
+      : null;
+
+    let [portfolioData, cryptoPrice] = await Promise.all([
       getDataPromise,
       cryptoPricePromise,
     ]);
 
-    let convertedValue: Record<string, Record<string, number>> = {};
-
     if (!token) {
-      cryptoPrice = await getCryptoPrice(Array.from(result.keys()));
-
-      convertedValue = convertValues(Object.fromEntries(result), cryptoPrice);
-    } else {
-      convertedValue = convertValues(
-        { [token]: result.get(token) },
-        cryptoPrice
-      );
+      cryptoPrice = await getCryptoPrice(Array.from(portfolioData.keys()));
     }
 
-    mainSpinner.succeed("Portfolio calculated");
-    printPortfolio(result, convertedValue);
+    const balance = token
+      ? { [token]: portfolioData.get(token) || 0 }
+      : Object.fromEntries(portfolioData);
+
+    const convertedValue = convertValues(balance, cryptoPrice);
+
+    mainSpinner.succeed(en.calculated.portfolio);
+
+    printPortfolio(portfolioData, convertedValue);
   } catch (error) {
-    mainSpinner.fail("Error on calculation");
-    console.log(error);
+    mainSpinner.fail(en.error.calculation);
+
+    handleError(error);
   }
 };

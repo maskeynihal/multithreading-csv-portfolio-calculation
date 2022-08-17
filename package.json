@@ -25,7 +25,7 @@
     "@types/to-snake-case": "^1.0.0",
     "axios": "^0.27.2",
     "camelcase-keys": "^8.0.1",
-    "chalk": "^5.0.1",
+    "chalk": "4",
     "cli-table3": "^0.6.2",
     "commander": "^9.4.0",
     "csv-parser": "^3.0.0",
@@ -35,6 +35,7 @@
     "ora": "5.4.1",
     "papaparse": "^5.3.2",
     "sqlite3": "^5.0.11",
-    "to-snake-case": "^1.0.0"
+    "to-snake-case": "^1.0.0",
+    "zod": "^3.18.0"
   }
 }

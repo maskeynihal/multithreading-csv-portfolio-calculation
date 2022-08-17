@@ -1,11 +1,13 @@
-import csvParser from "csv-parser";
-import { createReadStream, createWriteStream, statSync } from "fs";
-import { Transform } from "stream";
-import { Worker } from "worker_threads";
 import { cpus } from "os";
 import app from "../config/app";
+import csvParser from "csv-parser";
+import { Worker } from "worker_threads";
 import { fileSplitter } from "./file.services";
-import loader from "../lib/loader";
+import { IConvertedBalance, IConversion } from "./crypto.services";
+import { createReadStream, statSync } from "fs";
+import { IPortfolioOptions } from "./../validations/portfolio.validation";
+
+export type IFinalBalance = Map<string, number>;
 
 export const getData = async (onData: any): Promise<Map<string, any>> => {
   const result = new Map();
@@ -37,10 +39,9 @@ export const getNewAmountAccordingToTransactionType = ({
   return latestAmount - amount;
 };
 
-export const getDataWithThreads = async (filters: {
-  token?: string;
-  date?: string;
-}): Promise<Map<string, any>> => {
+export const getDataWithThreads = async (
+  filters: IPortfolioOptions
+): Promise<IFinalBalance> => {
   const filePath = app.portfolio.filePath;
 
   const minBufferSize = 1024 * 1024;
@@ -66,8 +67,8 @@ export const getDataWithThreads = async (filters: {
   });
 
   return new Promise((resolve, reject) => {
-    const final = new Map();
-    const completedWorkerId: any = [];
+    const final: IFinalBalance = new Map();
+    const completedWorkerId: Array<number> = [];
     const processFile =
       process.cwd() +
       ["", app.outDir, "src/services", "multiThreadProcess.services.js"].join(

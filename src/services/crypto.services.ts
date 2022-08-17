@@ -2,11 +2,20 @@ import api, { get } from "../lib/api";
 import { buildUrl } from "./../utils/string";
 import endpoints from "../constants/endpoints";
 
+const MINIMUM_FROM_LENGTH = 1;
+
+export type IConversion = Record<string, Record<string, number>>;
+export type IBalance = Record<string, number>;
+export type IConvertedBalance<T extends string | number> = Record<
+  string,
+  Record<T, number>
+>;
+
 export const getCryptoPrice = (
   from: Array<string> = [],
-  to: Array<string> = ["USD", "NPR"]
+  to: Array<string> = ["USD"]
 ) => {
-  return from.length > 1
+  return from.length > MINIMUM_FROM_LENGTH
     ? getMultipleSymbolPrice(from, to)
     : getSingleSymbolPrice(from.join(","), to);
 };
@@ -42,17 +51,12 @@ export const getMultipleSymbolPrice = (
   });
 };
 
-export const convertValues = (
-  balance: Record<string, number>,
-  conversion: Record<string, Record<string, number>>
-) => {
-  const convertedBalance: Record<
-    string,
-    Record<keyof typeof conversion, number>
-  > = {};
+export const convertValues = (balance: IBalance, conversion: IConversion) => {
+  const convertedBalance: IConvertedBalance<keyof typeof conversion> = {};
 
   for (const [token, amount] of Object.entries(balance)) {
     convertedBalance[token] = {};
+
     for (const [currency, value] of Object.entries(conversion[token])) {
       convertedBalance[token][currency] = amount * value;
     }

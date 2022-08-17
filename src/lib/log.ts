@@ -3,7 +3,7 @@ import chalk from "chalk";
 
 const log = console.log;
 
-const error = console.error;
+const error = (error: string) => console.error(chalk.red(error));
 
 const table = (
   options?: Table.TableConstructorOptions & {

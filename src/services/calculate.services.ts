@@ -1,3 +1,7 @@
+import {
+  IPortfolioOptions,
+  TransactionType,
+} from "./../validations/portfolio.validation";
 import { isSameDay } from "../lib/date";
 import { getNewAmountAccordingToTransactionType } from "./portfolio.services";
 
@@ -5,13 +9,14 @@ export const calculatePortfolio = async (
   data: {
     amount: number;
     token: string;
-    transaction_type: "DEPOSIT" | "WITHDRAWAL";
+    transaction_type: TransactionType;
     timestamp: number;
   },
   result: Map<string, any>,
-  filters: { token?: string; date?: string } = {}
+  filters: IPortfolioOptions = {}
 ): Promise<Map<string, any>> => {
   const { token, date } = filters;
+
   const latestAmount = result.get(data.token) || 0;
 
   result.set(data.token, latestAmount);

@@ -20,7 +20,7 @@ cli
   .action(calculate);
 
 cli
-  .command("pfs")
+  .command("pft")
   .description("Generate a portfolio (fast)")
   .option("-t, --token <token>", "Token for the portfolio")
   .option("-d, --date <date>", "Date for the portfolio")
