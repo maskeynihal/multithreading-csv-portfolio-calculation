@@ -1,4 +1,4 @@
-import api from "../lib/api";
+import api, { get } from "../lib/api";
 import { buildUrl } from "./../utils/string";
 import endpoints from "../constants/endpoints";
 
@@ -17,14 +17,12 @@ export const getSingleSymbolPrice = (from: string, to: Array<string>) => {
     endpoints.crypto.singleSymbolPrice
   );
 
-  return api
-    .get(url, {
-      params: {
-        fsym: from,
-        tsyms: to.join(","),
-      },
-    })
-    .then(({ data }) => ({ [from]: data }));
+  return get(url, {
+    params: {
+      fsym: from,
+      tsyms: to.join(","),
+    },
+  }).then((data) => ({ [from]: data }));
 };
 
 export const getMultipleSymbolPrice = (
@@ -36,14 +34,12 @@ export const getMultipleSymbolPrice = (
     endpoints.crypto.multipleSymbolPrice
   );
 
-  return api
-    .get(url, {
-      params: {
-        fsyms: from.join(","),
-        tsyms: to.join(","),
-      },
-    })
-    .then(({ data }) => data);
+  return get(url, {
+    params: {
+      fsyms: from.join(","),
+      tsyms: to.join(","),
+    },
+  });
 };
 
 export const convertValues = (

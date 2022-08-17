@@ -14,14 +14,14 @@ cli.command("setup").description("Setup the portfolio.").action(importCsv);
 
 cli
   .command("pf")
-  .description("Generate a portfolio")
+  .description("Generate a portfolio (slow)")
   .option("-t, --token <token>", "Token for the portfolio")
   .option("-d, --date <date>", "Date for the portfolio")
   .action(calculate);
 
 cli
   .command("pfs")
-  .description("Generate a portfolio")
+  .description("Generate a portfolio (fast)")
   .option("-t, --token <token>", "Token for the portfolio")
   .option("-d, --date <date>", "Date for the portfolio")
   .action(calculateWithMultiThread);

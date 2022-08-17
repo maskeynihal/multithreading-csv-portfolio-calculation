@@ -5,6 +5,7 @@ import { Worker } from "worker_threads";
 import { cpus } from "os";
 import app from "../config/app";
 import { fileSplitter } from "./file.services";
+import loader from "../lib/loader";
 
 export const getData = async (onData: any): Promise<Map<string, any>> => {
   const result = new Map();
@@ -67,22 +68,24 @@ export const getDataWithThreads = async (filters: {
   return new Promise((resolve, reject) => {
     const final = new Map();
     const completedWorkerId: any = [];
+    const processFile =
+      process.cwd() +
+      ["", app.outDir, "src/services", "multiThreadProcess.services.js"].join(
+        "/"
+      );
 
     const division = Math.ceil(totalFiles / thread);
 
     for (let i = 0; i < thread; i++) {
-      const worker = new Worker(
-        process.cwd() + "/dist/src/services/calculate.portfolio.services.js",
-        {
-          workerData: {
-            i,
-            loop: division,
-            starting: i,
-            ending: totalFiles,
-            filters,
-          },
-        }
-      );
+      const worker = new Worker(processFile, {
+        workerData: {
+          i,
+          loop: division,
+          starting: i,
+          ending: totalFiles,
+          filters,
+        },
+      });
 
       worker.on("message", (data) => {
         [...data.keys()].forEach((key) => {

@@ -8,4 +8,5 @@ export default {
       process.cwd() + ["", "data", "transaction_2022_07_13.csv"].join("/"),
     tmpFolder: process.cwd() + ["", "data", "tmp"].join("/"),
   },
+  outDir: "dist",
 };
