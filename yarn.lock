@@ -772,7 +772,7 @@ isexe@^2.0.0:
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
   integrity sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==
 
-knex@*, knex@^2.2.0:
+knex@*:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/knex/-/knex-2.2.0.tgz#86a3176924d37303b3f9ff7f70087418c263ce7a"
   integrity sha512-yhm1Qe9Ok0TeXBq3nNHqZYJPrQ4Iw2tq9k/HxjrZ/EWec2ifOjJlkNHr26v8cQrWtk5iG3iwfUazTIWy+VKG5g==
