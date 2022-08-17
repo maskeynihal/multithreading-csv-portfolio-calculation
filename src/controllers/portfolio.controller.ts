@@ -2,10 +2,12 @@ import { convertValues, getCryptoPrice } from "./../services/crypto.services";
 import { log } from "../lib/log";
 import {
   getData,
+  getDataWithThreads,
   getNewAmountAccordingToTransactionType,
 } from "../services/portfolio.services";
 import Table from "cli-table3";
 import { formatDate, isSameDay, isValidDate } from "../lib/date";
+import db from "../lib/db";
 
 export const calculate = async (options: any) => {
   const { token, date } = options;
@@ -17,7 +19,7 @@ export const calculate = async (options: any) => {
   const p = new Map();
 
   const getDataPromise = getData(
-    (data: {
+    async (data: {
       amount: number;
       token: string;
       transaction_type: "DEPOSIT" | "WITHDRAWAL";
@@ -88,55 +90,129 @@ export const calculate = async (options: any) => {
 
   const cryptoPricePromise = token ? getCryptoPrice([token]) : null;
 
-  let [_, cryptoPrice] = await Promise.all([
-    getDataPromise,
-    cryptoPricePromise,
-  ]);
+  try {
+    let [_, cryptoPrice] = await Promise.all([
+      getDataPromise,
+      cryptoPricePromise,
+    ]);
 
-  let convertedValue: Record<string, Record<string, number>> = {};
+    let convertedValue: Record<string, Record<string, number>> = {};
 
-  if (!token) {
-    cryptoPrice = await getCryptoPrice(Array.from(p.keys()));
+    if (!token) {
+      cryptoPrice = await getCryptoPrice(Array.from(p.keys()));
 
-    convertedValue = convertValues(Object.fromEntries(p), cryptoPrice);
-  } else {
-    convertedValue = convertValues({ [token]: p.get(token) }, cryptoPrice);
-  }
+      convertedValue = convertValues(Object.fromEntries(p), cryptoPrice);
+    } else {
+      convertedValue = convertValues({ [token]: p.get(token) }, cryptoPrice);
+    }
 
-  const headers = new Set(["S.N", "Token", "Amount"]);
-  const body = [];
+    const headers = new Set(["S.N", "Token", "Amount"]);
+    const body = [];
 
-  const values: Array<{ sn: number; token: string; amount: number }> = [];
-  let index = 1;
+    const values: Array<{ sn: number; token: string; amount: number }> = [];
+    let index = 1;
 
-  Object.entries(convertedValue).forEach(([token, amount]) => {
-    let a = {
-      sn: index,
-      token,
-      amount: p.get(token),
-    };
+    Object.entries(convertedValue).forEach(([token, amount]) => {
+      let a = {
+        sn: index,
+        token,
+        amount: p.get(token),
+      };
 
-    Object.entries(amount).forEach(([currency, value]) => {
-      a = { ...a, [currency]: value };
+      Object.entries(amount).forEach(([currency, value]) => {
+        a = { ...a, [currency]: value };
 
-      headers.add(currency);
+        headers.add(currency);
+      });
+
+      index++;
+
+      values.push(a);
     });
 
-    index++;
+    const table = new Table({
+      head: [...headers].map((header) => header.toUpperCase()),
+      style: {
+        head: ["cyan"],
+      },
+    });
 
-    values.push(a);
-  });
+    values.forEach((v) => {
+      table.push([...Object.values(v)]);
+    });
 
-  const table = new Table({
-    head: [...headers].map((header) => header.toUpperCase()),
-    style: {
-      head: ["cyan"],
-    },
-  });
+    log(table.toString());
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-  values.forEach((v) => {
-    table.push([...Object.values(v)]);
-  });
+export const calculateWithMultiThread = async (options: any) => {
+  const { token, date } = options;
 
-  log(table.toString());
+  if (date && !isValidDate(date)) {
+    throw new Error("Invalid date");
+  }
+
+  const p = new Map();
+
+  const getDataPromise = getDataWithThreads();
+
+  const cryptoPricePromise = token ? getCryptoPrice([token]) : null;
+
+  try {
+    let [p, cryptoPrice] = await Promise.all([
+      getDataPromise,
+      cryptoPricePromise,
+    ]);
+
+    let convertedValue: Record<string, Record<string, number>> = {};
+
+    if (!token) {
+      cryptoPrice = await getCryptoPrice(Array.from(p.keys()));
+
+      convertedValue = convertValues(Object.fromEntries(p), cryptoPrice);
+    } else {
+      convertedValue = convertValues({ [token]: p.get(token) }, cryptoPrice);
+    }
+
+    const headers = new Set(["S.N", "Token", "Amount"]);
+    const body = [];
+
+    const values: Array<{ sn: number; token: string; amount: number }> = [];
+    let index = 1;
+
+    Object.entries(convertedValue).forEach(([token, amount]) => {
+      let a = {
+        sn: index,
+        token,
+        amount: p.get(token),
+      };
+
+      Object.entries(amount).forEach(([currency, value]) => {
+        a = { ...a, [currency]: value };
+
+        headers.add(currency);
+      });
+
+      index++;
+
+      values.push(a);
+    });
+
+    const table = new Table({
+      head: [...headers].map((header) => header.toUpperCase()),
+      style: {
+        head: ["cyan"],
+      },
+    });
+
+    values.forEach((v) => {
+      table.push([...Object.values(v)]);
+    });
+
+    log(table.toString());
+  } catch (error) {
+    console.log(error);
+  }
 };
