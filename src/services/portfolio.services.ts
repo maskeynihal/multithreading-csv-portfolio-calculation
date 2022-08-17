@@ -3,73 +3,21 @@ import { createReadStream, createWriteStream, statSync } from "fs";
 import { Transform } from "stream";
 import { Worker } from "worker_threads";
 import { cpus } from "os";
+import app from "../config/app";
+import { fileSplitter } from "./file.services";
 
-const fileSplitter = (options: { totalFiles: number }) => {
-  let totalFilesCreated = 0;
+export const getData = async (onData: any): Promise<Map<string, any>> => {
+  const result = new Map();
 
-  const { totalFiles } = options;
-
-  const transformer = new Transform();
-
-  let trailing: any;
-  let headers: any;
-
-  transformer._transform = (data, encoding, cb) => {
-    totalFilesCreated++;
-    let firstData = data;
-
-    const write = createWriteStream(
-      process.cwd() + ["", "data", "tmp", `${totalFilesCreated}.csv`].join("/")
-    );
-
-    if (trailing) {
-      const newBuffer = Buffer.concat([headers, trailing, data]);
-
-      if (totalFilesCreated >= totalFiles) {
-        firstData = newBuffer;
-        trailing = null;
-      } else {
-        firstData = newBuffer.slice(0, newBuffer.lastIndexOf("\n"));
-        trailing = newBuffer.slice(newBuffer.lastIndexOf("\n"));
-      }
-    } else {
-      if (totalFilesCreated >= totalFiles) {
-        firstData = data;
-        trailing = null;
-      } else {
-        headers = data.slice(0, data.indexOf("\n"));
-        firstData = data.slice(0, data.lastIndexOf("\n"));
-        trailing = data.slice(data.lastIndexOf("\n"));
-      }
-    }
-    write.write(firstData);
-
-    cb(null, firstData);
-  };
-
-  return transformer;
-};
-
-export const getData = async (onData: any) => {
-  // const file = "tmp/1.csv";
-  const file = "transactions.csv";
-  // const file = "transaction_2022_07_13.csv";
-
-  await new Promise((resolve, reject) => {
-    createReadStream(process.cwd() + ["", "data", file].join("/"))
+  return await new Promise((resolve, reject) => {
+    createReadStream(app.portfolio.filePath)
       .pipe(csvParser())
-      .on("open", () => console.log(`Opening ${file}`))
-      .on("ready", () => console.log(`Importing ${file}`))
-      .on("data", onData)
-      .on("end", async () => {
-        resolve("done");
+      .on("data", (data) => onData(data, result))
+      .on("end", () => {
+        resolve(result);
       })
-      .on("error", async (err) => {
-        reject(err);
-      });
+      .on("error", reject);
   });
-
-  console.log("DONE");
 };
 
 export const getNewAmountAccordingToTransactionType = ({
@@ -88,11 +36,11 @@ export const getNewAmountAccordingToTransactionType = ({
   return latestAmount - amount;
 };
 
-export const getDataWithThreads = async (): Promise<Map<string, any>> => {
-  const file = "transactions.csv";
-  // const file = "transaction_2022_07_13.csv";
-
-  const filePath = process.cwd() + ["", "data", file].join("/");
+export const getDataWithThreads = async (filters: {
+  token?: string;
+  date?: string;
+}): Promise<Map<string, any>> => {
+  const filePath = app.portfolio.filePath;
 
   const minBufferSize = 1024 * 1024;
   const stats = statSync(filePath);
@@ -109,15 +57,11 @@ export const getDataWithThreads = async (): Promise<Map<string, any>> => {
       highWaterMark: bufferSize,
     })
       .pipe(fileSplitter({ totalFiles }))
-      .on("open", () => console.log(`Opening ${file}`))
-      .on("ready", () => console.log(`Importing ${file}`))
       .on("data", (data) => data)
       .on("end", async () => {
         resolve("done");
       })
-      .on("error", async (err) => {
-        reject(err);
-      });
+      .on("error", reject);
   });
 
   return new Promise((resolve, reject) => {
@@ -130,11 +74,15 @@ export const getDataWithThreads = async (): Promise<Map<string, any>> => {
       const worker = new Worker(
         process.cwd() + "/dist/src/services/calculate.portfolio.services.js",
         {
-          workerData: { i, loop: division, starting: i, ending: totalFiles },
+          workerData: {
+            i,
+            loop: division,
+            starting: i,
+            ending: totalFiles,
+            filters,
+          },
         }
       );
-
-      worker.on("error", (err) => console.log(err));
 
       worker.on("message", (data) => {
         [...data.keys()].forEach((key) => {
@@ -144,11 +92,15 @@ export const getDataWithThreads = async (): Promise<Map<string, any>> => {
         completedWorkerId.push(worker.threadId);
 
         worker.terminate();
+      });
 
+      worker.on("exit", () => {
         if (completedWorkerId.length === thread) {
           resolve(final);
         }
       });
+
+      worker.on("error", reject);
     }
   });
 };

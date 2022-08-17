@@ -1,7 +1,9 @@
 import csvParser from "csv-parser";
 import { createReadStream } from "fs";
 import { workerData, parentPort } from "worker_threads";
+import app from "../config/app";
 import { isSameDay } from "../lib/date";
+import { calculatePortfolio } from "./calculate.services";
 import { getNewAmountAccordingToTransactionType } from "./portfolio.services";
 
 const token = null;
@@ -76,10 +78,12 @@ const calculateAmount = async (data: {
   p.set(data.token, newAmount);
 };
 
-let loop = 0;
-let completedLoop = 0;
-
 (async () => {
+  let loop = 0;
+  let completedLoop = 0;
+  const filters = workerData.filters;
+  const result = new Map();
+
   await new Promise((resolve, reject) => {
     const startingIndex = workerData.starting * workerData.loop;
     const endingIndex = startingIndex + workerData.loop;
@@ -90,20 +94,20 @@ let completedLoop = 0;
       index++
     ) {
       loop++;
-      createReadStream(
-        process.cwd() + ["", "data", "tmp", `${index}.csv`].join("/")
-      )
+
+      createReadStream(`${app.portfolio.tmpFolder}/${index}.csv`)
         .pipe(csvParser())
-        .on("data", calculateAmount)
+        .on("data", (data) => calculatePortfolio(data, result, filters))
         .on("end", () => {
           completedLoop++;
 
           if (completedLoop === loop) {
-            resolve("done");
+            resolve(result);
           }
-        });
+        })
+        .on("error", reject);
     }
   });
 
-  parentPort?.postMessage(p);
+  parentPort?.postMessage(result);
 })();
