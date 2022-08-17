@@ -24,7 +24,7 @@ export const calculatePortfolio = async (
   if (token && date) {
     if (
       data.token !== token ||
-      !isSameDay(new Date(data.timestamp), new Date(date))
+      !isSameDay(new Date(+data.timestamp), new Date(date))
     ) {
       return result;
     }
@@ -56,7 +56,7 @@ export const calculatePortfolio = async (
   }
 
   if (date) {
-    if (!isSameDay(new Date(data.timestamp), new Date(date))) {
+    if (!isSameDay(new Date(+data.timestamp), new Date(date))) {
       return result;
     }
 

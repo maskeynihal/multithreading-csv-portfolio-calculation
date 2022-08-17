@@ -17,11 +17,11 @@ export const printPortfolio = (
 
   const values: Array<ITableRow> = [];
 
-  let loop = 1;
+  let loop = 0;
 
   Object.entries(convertedValue).forEach(([token, amount]) => {
-    let currentAmount = {};
     loop++;
+    let currentAmount = {};
 
     Object.entries(amount).forEach(([currency, value]) => {
       currentAmount = { ...currentAmount, [currency]: value };
